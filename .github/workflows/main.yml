@@ -1,37 +1,44 @@
-name: Deploy Laravel Project on push to cpanel
+name: Deploy Laravel Project to cPanel
 on:
   push:
     branches:
       - main
+
 jobs:
   web-deploy:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Get the latest code
-        uses: actions/checkout@v2.3.2
-      - uses: actions/setup-node@master
+      # Ambil kode terbaru dari repo
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Setup PHP (Laravel butuh PHP, bukan Node)
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1' # sesuaikan versi PHP hostingmu
+
+      # Copy .env jika belum ada
       - name: Copy .env
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+      # Set permission untuk folder storage & bootstrap/cache
       - name: Directory Permissions
         run: chmod -R 777 storage bootstrap/cache
-      - name: 📂 Sync files
+
+      # Sync files via FTP
+      - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@4.0.0
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /
+          server-dir: / # sesuaikan dengan public_html/subdomain
           exclude: |
             **/.git*
-            **/.git*/**
             **/node_modules/**
-            **/bootstrap/**
-            **/database/**
-            **/public/**
-            **/storage/**
-            **/stubs/**
             **/tests/**
-            **/vendor/**
-            **.env
-
+            **/.env
+            **/stubs/**
+            **/vendor/**  # jika server pakai composer, biarkan exclude
